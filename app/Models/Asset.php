@@ -51,4 +51,24 @@ class Asset extends Model
     {
         return $this->AssetName ?: $this->CAKID ?: "Asset #{$this->AssetID}";
     }
+
+    public function assetType()
+    {
+        return $this->belongsTo(AssetType::class, 'AssetType', 'AssetTypeID');
+    }
+
+    public function assetSubType()
+    {
+        return $this->belongsTo(AssetSubType::class, 'AssetSubType', 'AssetSubTypeID');
+    }
+
+    public function assetTertiaryType()
+    {
+        return $this->belongsTo(AssetTertiaryType::class, 'AssetTertiaryType', 'TertiaryTypeID');
+    }
+
+    public function building()
+    {
+        return $this->belongsTo(Building::class, 'AssetBuilding', 'BuildingID');
+    }
 }
