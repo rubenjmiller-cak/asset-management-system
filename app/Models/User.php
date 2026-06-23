@@ -14,6 +14,7 @@ class User extends Authenticatable implements FilamentUser
 
     protected $table = 'accounts';
     protected $primaryKey = 'AccountID';
+    public $timestamps = false;
 
     protected $fillable = [
         'username',

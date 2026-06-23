@@ -35,4 +35,9 @@ class PlaintextUserProvider extends EloquentUserProvider
         // Plaintext comparison — no bcrypt involved
         return $user->getAuthPassword() === $credentials['password'];
     }
+
+    public function rehashPasswordIfRequired(Authenticatable $user, array $credentials, bool $force = false): void
+    {
+        // Never rehash — passwords stay plaintext until a schema migration upgrades them
+    }
 }
