@@ -15,18 +15,18 @@ class PlaintextUserProvider extends EloquentUserProvider
 {
     public function retrieveByCredentials(array $credentials): ?Authenticatable
     {
-        // Map Filament's 'email' key to the actual column name
-        $mapped = [];
-        foreach ($credentials as $key => $value) {
-            if ($key === 'password') {
-                continue;
-            }
-            $mapped[$key === 'email' ? 'useremail' : $key] = $value;
+        $login = $credentials['email'] ?? null;
+        if (!$login) {
+            return null;
         }
 
+        // Accept username or email address
         return $this->createModel()
             ->newQuery()
-            ->where($mapped)
+            ->where(function ($q) use ($login) {
+                $q->where('username', $login)
+                  ->orWhere('useremail', $login);
+            })
             ->first();
     }
 
