@@ -79,8 +79,6 @@ class AssetResource extends Resource
                     ->label('CAK ID')
                     ->sortable()
                     ->searchable(),
-                // Use renamed relationships (typeLookup, not assetType) to avoid
-                // PHP case-insensitive method collision with the AssetType column
                 Tables\Columns\TextColumn::make('typeLookup.AssetType')
                     ->label('Type')
                     ->sortable()
@@ -115,6 +113,7 @@ class AssetResource extends Resource
             ->filters([
                 SelectFilter::make('type_filter')
                     ->label('Asset Type')
+                    ->searchable()
                     ->options(fn() => AssetType::orderBy('AssetType')->pluck('AssetType', 'AssetTypeID'))
                     ->query(fn(Builder $query, array $data) => $query->when(
                         filled($data['value']),
@@ -123,6 +122,7 @@ class AssetResource extends Resource
 
                 SelectFilter::make('subtype_filter')
                     ->label('Subtype')
+                    ->searchable()
                     ->options(fn() => self::subtypeOptions())
                     ->query(fn(Builder $query, array $data) => $query->when(
                         filled($data['value']),
@@ -131,6 +131,7 @@ class AssetResource extends Resource
 
                 SelectFilter::make('tertiary_filter')
                     ->label('Tertiary Type')
+                    ->searchable()
                     ->options(fn() => AssetTertiaryType::orderBy('TertiaryType')->pluck('TertiaryType', 'TertiaryTypeID'))
                     ->query(fn(Builder $query, array $data) => $query->when(
                         filled($data['value']),
@@ -139,8 +140,8 @@ class AssetResource extends Resource
 
                 SelectFilter::make('building_filter')
                     ->label('Building')
-                    ->options(fn() => Building::orderBy('Name')->pluck('Name', 'BuildingID'))
                     ->searchable()
+                    ->options(fn() => Building::orderBy('Name')->pluck('Name', 'BuildingID'))
                     ->query(fn(Builder $query, array $data) => $query->when(
                         filled($data['value']),
                         fn($q) => $q->where('AssetBuilding', $data['value'])
@@ -149,21 +150,20 @@ class AssetResource extends Resource
                 Filter::make('cak_id')
                     ->label('CAK ID')
                     ->form([
-                        Forms\Components\TextInput::make('cak_id')->label('CAK ID'),
+                        Forms\Components\TextInput::make('cak_id')
+                            ->label('CAK ID')
+                            ->placeholder('Search CAK ID…'),
                     ])
                     ->query(fn(Builder $query, array $data) => $query->when(
                         filled($data['cak_id']),
                         fn($q) => $q->where('CAKID', 'like', '%' . $data['cak_id'] . '%')
                     ))
                     ->indicateUsing(fn(array $data) => filled($data['cak_id']) ? 'CAK ID: ' . $data['cak_id'] : null),
-
-                Tables\Filters\TernaryFilter::make('AssetArchive')
-                    ->label('Archived')
-                    ->trueLabel('Archived only')
-                    ->falseLabel('Active only')
-                    ->placeholder('All assets'),
             ])
-            ->filtersLayout(Tables\Enums\FiltersLayout::AboveContentCollapsible)
+            // Always-visible horizontal strip — mirrors PHPMaker's extended search bar
+            ->filtersLayout(Tables\Enums\FiltersLayout::AboveContent)
+            ->filtersTriggerAction(fn($action) => $action->hidden())
+            ->filtersFormColumns(5)
             ->defaultSort('AssetID', 'desc')
             ->actions([
                 Tables\Actions\ViewAction::make(),
