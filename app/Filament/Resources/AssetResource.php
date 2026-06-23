@@ -79,11 +79,13 @@ class AssetResource extends Resource
                     ->label('CAK ID')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('assetType.AssetType')
+                // Use renamed relationships (typeLookup, not assetType) to avoid
+                // PHP case-insensitive method collision with the AssetType column
+                Tables\Columns\TextColumn::make('typeLookup.AssetType')
                     ->label('Type')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('assetSubType.AssetSubType')
+                Tables\Columns\TextColumn::make('subTypeLookup.AssetSubType')
                     ->label('Subtype')
                     ->sortable()
                     ->toggleable(),
@@ -111,40 +113,49 @@ class AssetResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('AssetType')
+                SelectFilter::make('type_filter')
                     ->label('Asset Type')
                     ->options(fn() => AssetType::orderBy('AssetType')->pluck('AssetType', 'AssetTypeID'))
-                    ->attribute('AssetType'),
+                    ->query(fn(Builder $query, array $data) => $query->when(
+                        filled($data['value']),
+                        fn($q) => $q->where('AssetType', $data['value'])
+                    )),
 
-                SelectFilter::make('AssetSubType')
+                SelectFilter::make('subtype_filter')
                     ->label('Subtype')
-                    ->options(fn(SelectFilter $filter) => self::subtypeOptionsForFilter($filter))
-                    ->attribute('AssetSubType'),
+                    ->options(fn() => self::subtypeOptions())
+                    ->query(fn(Builder $query, array $data) => $query->when(
+                        filled($data['value']),
+                        fn($q) => $q->where('AssetSubType', $data['value'])
+                    )),
 
-                SelectFilter::make('AssetTertiaryType')
+                SelectFilter::make('tertiary_filter')
                     ->label('Tertiary Type')
                     ->options(fn() => AssetTertiaryType::orderBy('TertiaryType')->pluck('TertiaryType', 'TertiaryTypeID'))
-                    ->attribute('AssetTertiaryType'),
+                    ->query(fn(Builder $query, array $data) => $query->when(
+                        filled($data['value']),
+                        fn($q) => $q->where('AssetTertiaryType', $data['value'])
+                    )),
 
-                SelectFilter::make('AssetBuilding')
+                SelectFilter::make('building_filter')
                     ->label('Building')
                     ->options(fn() => Building::orderBy('Name')->pluck('Name', 'BuildingID'))
-                    ->attribute('AssetBuilding'),
+                    ->searchable()
+                    ->query(fn(Builder $query, array $data) => $query->when(
+                        filled($data['value']),
+                        fn($q) => $q->where('AssetBuilding', $data['value'])
+                    )),
 
-                Filter::make('CAKID')
+                Filter::make('cak_id')
                     ->label('CAK ID')
                     ->form([
                         Forms\Components\TextInput::make('cak_id')->label('CAK ID'),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query->when(
-                            filled($data['cak_id']),
-                            fn($q) => $q->where('CAKID', 'like', '%' . $data['cak_id'] . '%')
-                        );
-                    })
-                    ->indicateUsing(function (array $data): ?string {
-                        return filled($data['cak_id']) ? 'CAK ID: ' . $data['cak_id'] : null;
-                    }),
+                    ->query(fn(Builder $query, array $data) => $query->when(
+                        filled($data['cak_id']),
+                        fn($q) => $q->where('CAKID', 'like', '%' . $data['cak_id'] . '%')
+                    ))
+                    ->indicateUsing(fn(array $data) => filled($data['cak_id']) ? 'CAK ID: ' . $data['cak_id'] : null),
 
                 Tables\Filters\TernaryFilter::make('AssetArchive')
                     ->label('Archived')
@@ -160,13 +171,13 @@ class AssetResource extends Resource
             ->bulkActions([]);
     }
 
-    protected static function subtypeOptionsForFilter(SelectFilter $filter): array
+    protected static function subtypeOptions(): array
     {
         return AssetSubType::query()
             ->join('tblAssets_LU_Type', 'tblAssets_LU_SubType.AssetTypeID', '=', 'tblAssets_LU_Type.AssetTypeID')
             ->orderBy('tblAssets_LU_Type.AssetType')
             ->orderBy('tblAssets_LU_SubType.AssetSubType')
-            ->selectRaw('tblAssets_LU_SubType.AssetSubTypeID, CONCAT(tblAssets_LU_Type.AssetType, " › ", tblAssets_LU_SubType.AssetSubType) as label')
+            ->selectRaw('tblAssets_LU_SubType.AssetSubTypeID, CONCAT(tblAssets_LU_Type.AssetType, " > ", tblAssets_LU_SubType.AssetSubType) as label')
             ->pluck('label', 'AssetSubTypeID')
             ->toArray();
     }

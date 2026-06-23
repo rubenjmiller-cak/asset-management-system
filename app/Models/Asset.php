@@ -52,17 +52,18 @@ class Asset extends Model
         return $this->AssetName ?: $this->CAKID ?: "Asset #{$this->AssetID}";
     }
 
-    public function assetType()
+    // Suffix avoids PHP case-insensitive method collision with same-named columns
+    public function typeLookup()
     {
         return $this->belongsTo(AssetType::class, 'AssetType', 'AssetTypeID');
     }
 
-    public function assetSubType()
+    public function subTypeLookup()
     {
         return $this->belongsTo(AssetSubType::class, 'AssetSubType', 'AssetSubTypeID');
     }
 
-    public function assetTertiaryType()
+    public function tertiaryTypeLookup()
     {
         return $this->belongsTo(AssetTertiaryType::class, 'AssetTertiaryType', 'TertiaryTypeID');
     }
